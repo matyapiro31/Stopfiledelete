@@ -14,7 +14,9 @@
     tools:context="net.surlinter.akira.stopfiledelete.MainActivity">
 
     <TextView
-        android:text="Hello World!"
+        android:id="@+id/tv1"
+        android:text="@string/explanation"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:textIsSelectable="false" />
 </RelativeLayout>
