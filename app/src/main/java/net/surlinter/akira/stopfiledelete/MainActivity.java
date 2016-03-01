@@ -329,7 +329,7 @@ public class MainActivity extends AppCompatActivity {
         client.disconnect();
     }
 
-    public void Test() {
+    public void Test(android.content.Context context) {
         OpenFileDialog openFileDialog = new OpenFileDialog("/data");
         openFileDialog.openFileAction = new OpenFileDialog.OpenFileAction() {
             @Override
@@ -349,6 +349,11 @@ public class MainActivity extends AppCompatActivity {
 
             }
         };
+        try {
+            openFileDialog.createOpenFileDialog(context, OpenFileDialog.OpenMode.Write);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
     /*
 
