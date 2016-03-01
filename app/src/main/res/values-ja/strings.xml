@@ -1,6 +1,18 @@
 <resources>
     <string name="app_name">削除をストップ!</string>
     <string name="action_settings">設定</string>
+    <string name="action_help">ヘルプ</string>
     <string name="search_message">タップでファイルを検索。</string>
+    <string name="setting_message">このアプリの設定。</string>
+    <string name="showlog_message">このアプリの活動記録を参照。</string>
+    <string name="savelog_message">活動記録を保存。</string>
     <string name="explanation">準備中...</string>
+    <string name="show_log">ログを見る</string>
+    <string name="save_log">ログを保存</string>
+    <string name="saved">保存しました</string>
+    <string name="name">名前</string>
+    <string name="open">開く</string>
+    <string name="cancel">キャンセル</string>
+    <string name="no_such_file_or_directory">そのようなファイルやディレクトリはありません。</string>
+
 </resources>

@@ -1,6 +1,17 @@
 <resources>
     <string name="app_name">Stop file delete</string>
     <string name="action_settings">Settings</string>
+    <string name="action_help">Help</string>
     <string name="search_message">Tap to search a file.</string>
+    <string name="setting_message">Settings of this application.</string>
+    <string name="showlog_message">Show activity log of this application.</string>
+    <string name="savelog_message">Save activity log.</string>
     <string name="explanation">Initilizing...</string>
+    <string name="show_log">View log</string>
+    <string name="save_log">Save log</string>
+    <string name="name">Name</string>
+    <string name="saved">Saved</string>
+    <string name="open">Open</string>
+    <string name="cancel">Cancel</string>
+    <string name="no_such_file_or_directory">No such file or directory.</string>
 </resources>

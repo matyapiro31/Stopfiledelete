@@ -6,4 +6,13 @@
         android:title="@string/action_settings"
         android:orderInCategory="100"
         app:showAsAction="never" />
+    <item android:id="@+id/action_save_log"
+        android:title="@string/save_log"
+        android:orderInCategory="100"
+        app:showAsAction="never" />
+    <item android:id="@+id/action_help"
+        android:title="@string/action_help"
+        android:checkable="true"
+        android:orderInCategory="100"
+        app:showAsAction="never" />
 </menu>

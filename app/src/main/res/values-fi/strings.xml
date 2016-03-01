@@ -1,6 +1,17 @@
 <resources>
     <string name="app_name">Stop file delete</string>
     <string name="action_settings">Asetukset</string>
+    <string name="action_help">Ohje</string>
     <string name="search_message">Tap to search a file.</string>
+    <string name="setting_message">App Asetukset.</string>
+    <string name="showlog_message">Lokitiedostojen katseluohjelma.</string>
+    <string name="savelog_message">Save activity log.</string>
     <string name="explanation">Valmisteilla...</string>
+    <string name="show_log">Näytä loki</string>
+    <string name="save_log">Tallentaa loki</string>
+    <string name="saved">Tallennettu</string>
+    <string name="name">Nimi</string>
+    <string name="open">Avaa</string>
+    <string name="cancel">Peru</string>
+    <string name="no_such_file_or_directory">Tiedostoa tai hakemistoa ei ole.</string>
 </resources>

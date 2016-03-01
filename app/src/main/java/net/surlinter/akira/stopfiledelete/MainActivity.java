@@ -1,18 +1,17 @@
 package net.surlinter.akira.stopfiledelete;
 
-import android.app.Activity;
+import android.content.DialogInterface;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.view.GestureDetector;
-import android.view.MotionEvent;
+import android.text.method.ScrollingMovementMethod;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Button;
 import android.widget.TextView;
 
 import com.google.android.gms.appindexing.Action;
@@ -21,6 +20,8 @@ import com.google.android.gms.common.api.GoogleApiClient;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.Runtime;
@@ -37,6 +38,7 @@ public class MainActivity extends AppCompatActivity {
     protected int mode=0;
     protected static final int usual = 1;
     protected static final int help = 2;
+    protected static final int log = 3;
     public String exec_log="";
 
     @Override
@@ -46,12 +48,10 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        //Test
-        String test = "/storage/emulated/legacy/test";
-        addAttr(test);
         final TextView TV1= (TextView)findViewById(R.id.tv1);
-        TV1.setText(test);
+        //mode = help; //mode of show help message.
 
+        mode = usual;
         //set fab events
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -63,9 +63,28 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     java.util.Date date= new java.util.Date();
                     exec_log += "Search fab was clicked. (" + date.toString() +")\n\n";
-                    Process pr_ls = execShell(new String[] {"su","-c","lsattr /storage/emulated/legacy/"});
+                    Process pr_ls = execShell(new String[] {"su","-c","lsattr /data/"});
                     String output = getProcessStdOut(pr_ls);
+                    mode = usual;
+                    TV1.scrollTo(0,0);
                     TV1.setText(output);
+                }
+            }
+        });
+
+        Button button1 = (Button) findViewById(R.id.button1);
+        button1.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick (View view) {
+                if (mode == help) {
+                    Snackbar.make(view,getString(R.string.showlog_message), Snackbar.LENGTH_LONG)
+                            .setAction("Action", null).show();
+                } else {
+                    if (mode == usual) {
+                        TV1.scrollTo(0,0);
+                    }
+                    mode = log;
+                    TV1.setText(exec_log);
                 }
             }
         });
@@ -92,6 +111,33 @@ public class MainActivity extends AppCompatActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+            if (mode == help) {
+                Snackbar.make(getWindow().getDecorView(),getString(R.string.setting_message), Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();
+            } else {
+                android.content.Intent intent1 = new android.content.Intent(this, AkiraPreferenceActivity.class);
+                startActivity(intent1);
+            }
+            return true;
+        } else if (id == R.id.action_save_log) {
+            final TextView TV1= (TextView)findViewById(R.id.tv1);
+            if (mode == usual || mode == log) {
+                try {
+                    FileOutputStream f_os = openFileOutput("exec_log", MODE_APPEND|MODE_PRIVATE);
+                    f_os.write(exec_log.getBytes());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                Snackbar.make(getWindow().getDecorView(),getString(R.string.saved), Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();
+            } else if (mode == help) {
+                Snackbar.make(getWindow().getDecorView(),getString(R.string.savelog_message), Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();
+            }
+            return true;
+        } else if (id == R.id.action_help) {
+            mode = mode == help?usual:help;
+            item.setChecked(!item.isChecked());
             return true;
         }
         return super.onOptionsItemSelected(item);
@@ -150,7 +196,7 @@ public class MainActivity extends AppCompatActivity {
         exec_log += " \'";
         for (String arg:cmdarray
              ) {
-            exec_log += arg==cmdarray[0]?"":" " + arg;
+            exec_log += arg.equals(cmdarray[0])?"":" " + arg;
         } exec_log += "\'\n";
         exec_log += "process is " + process.toString() +"\n\n";
 
@@ -224,6 +270,7 @@ public class MainActivity extends AppCompatActivity {
             pr.destroy();
             ret = -1;
         }
+        exec_log += "process " + pr.toString() + "is exited. (" + new java.util.Date().toString() + ")\n\n";
         return ret;
     }
 
@@ -248,6 +295,21 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+
+        //Test
+        String test = "/data/test";
+        execShell(new String[]{"su", "-c", "touch /data/test"});
+        java.lang.Process pr = execShell(new String[] {"su"});
+        setProcessStdIn(pr,new String[] {"chattr +i /data/test","exit"});
+        exitProcess(pr);
+        final TextView TV1= (TextView)findViewById(R.id.tv1);
+        TV1.setMovementMethod(ScrollingMovementMethod.getInstance());
+        TV1.setText(test);
+    }
+
+    @Override
     public void onStop() {
         super.onStop();
 
@@ -266,4 +328,78 @@ public class MainActivity extends AppCompatActivity {
         AppIndex.AppIndexApi.end(client, viewAction);
         client.disconnect();
     }
+
+    public void Test() {
+        OpenFileDialog openFileDialog = new OpenFileDialog("/data");
+        openFileDialog.openFileAction = new OpenFileDialog.OpenFileAction() {
+            @Override
+            public File write(File file) {
+                execShell(new String[] {"su", "-c", "chattr +i " + file.getAbsolutePath()});
+                return file;
+            }
+
+            @Override
+            public File append(File file) {
+                execShell(new String[] {"su", "-c", "chattr -i " + file.getAbsolutePath()});
+                return file;
+            }
+
+            @Override
+            public void read(File file) {
+
+            }
+        };
+    }
+    /*
+
+    public interface OpenFileAction {
+        java.io.File write(java.io.File file);
+        java.io.File append(java.io.File file);
+        void read(java.io.File file);
+        String toString();
+    }
+
+    public enum OpenMode {
+        Write,Append,Read
+    }
+
+    public android.app.AlertDialog.Builder createOpenFileDialog(android.content.Context context,final String[] items, final String path, final OpenFileAction openFileAction, final OpenMode mode)
+            throws java.io.IOException {
+        final java.util.ArrayList<Integer> checkedItems = new java.util.ArrayList<>();
+        final android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(context);
+        builder.setTitle(getString(R.string.open))
+                .setMultiChoiceItems(items, null, new android.content.DialogInterface.OnMultiChoiceClickListener() {
+                    @Override
+                    public void onClick(android.content.DialogInterface dialog, int which, boolean isChecked) {
+                        if (isChecked) checkedItems.add(which);
+                        else checkedItems.remove(which);
+                    }
+                })
+                .setPositiveButton(getString(R.string.open), new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(android.content.DialogInterface dialog, int which) {
+
+                        for (Integer i : checkedItems) {
+                            // item_i checked
+                            // note: i is undefined when not checked. use switch to do work.
+
+                            // insert / as double / is allowed and no / is error.
+                            java.io.File file = new java.io.File(path + "/" + items[i]);
+                            switch (mode) {
+                                case Write:
+                                    file = openFileAction.write(file);
+                                    break;
+                                case Append:
+                                    file = openFileAction.append(file);
+                                case Read:
+                                    openFileAction.read(file);
+                                default:
+                                    android.util.Log.d("FileState", openFileAction.toString());
+                            }
+                        }
+                    }
+                })
+                .setNegativeButton(getString(R.string.cancel), null);
+        return builder;
+    }*/
 }
