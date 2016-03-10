@@ -2,6 +2,7 @@
   <dictionary name="akira">
     <words>
       <w>chattr</w>
+      <w>childopenfiledialog</w>
       <w>cmdarray</w>
       <w>execshell</w>
       <w>lsattr</w>

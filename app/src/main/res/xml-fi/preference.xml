@@ -1,9 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
-    <PreferenceCategory android:title="preference1">
+    <PreferenceCategory android:title="Asetukset">
+        <EditTextPreference
+            android:key="default_path"
+            android:title="Default Path"
+            android:summary="open in this path."
+            android:defaultValue="/" />
         <CheckBoxPreference
-            android:key="key1"
-            android:title="First"
-            android:summary="First item." />
+            android:key="is_log_auto"
+            android:title="Auto logging"
+            android:summary="automatically log or not."
+            android:defaultValue="false" />
     </PreferenceCategory>
 </PreferenceScreen>

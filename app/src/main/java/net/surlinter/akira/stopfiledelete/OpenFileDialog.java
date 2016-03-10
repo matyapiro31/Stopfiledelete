@@ -1,49 +1,53 @@
 package net.surlinter.akira.stopfiledelete;
 
-import android.app.Activity;
-import android.content.Context;
 import android.content.DialogInterface;
-import android.net.Uri;
-import android.os.Bundle;
-import android.os.Environment;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
-import android.text.method.ScrollingMovementMethod;
-import android.view.GestureDetector;
-import android.view.MotionEvent;
-import android.view.View;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.widget.Button;
-import android.widget.TextView;
-
-import com.google.android.gms.appindexing.Action;
-import com.google.android.gms.appindexing.AppIndex;
-import com.google.android.gms.common.api.GoogleApiClient;
-
-import java.io.BufferedReader;
-import java.io.DataOutputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.lang.Runtime;
-import java.lang.Process;
 
 public class OpenFileDialog {
     public OpenFileDialog() {
-        this.init("/");
+        try {
+            this.init("/");
+        } catch (java.io.IOException e) {
+            e.printStackTrace();
+        }
         path = "/";
     }
     public OpenFileDialog(String openDir) {
-        this.init(openDir);
-        path = openDir;
+        try {
+            this.init(openDir);
+        } catch (java.io.IOException e) {
+            e.printStackTrace();
+        }
+        if (openDir.startsWith("//")) {
+            path = openDir.substring(1);
+        } else {
+            path = openDir;
+        }
     }
-    public void init(String dirname) {
+    public void init(String dirname) throws java.io.IOException{
         java.io.File file= new java.io.File(dirname);
-        items = file.list();
+        int counter = 0;
+
+        if (!file.getCanonicalPath().equals("")) {
+            int size = file.list()!=null ? file.list().length:0;
+            items = new String[size + 1];
+            items[0] = "../";
+            if (file.list()!=null) {
+                java.lang.System.arraycopy(file.list(),0,items,1,size);
+                counter = 1;
+            }
+        } else {
+            items = file.list()!=null?file.list():new String[] {""};
+            counter = 0;
+        }
+        for (;counter<items.length;counter++) {
+            java.io.File iItem = new java.io.File(dirname + "/" + items[counter]);
+            if (iItem.isDirectory()) {
+                items[counter] += "/";
+            }
+        }
+        if (items[0].equals("..//")) {
+            items[0] = "../";
+        }
     }
 
     public interface OpenFileAction {
@@ -60,7 +64,7 @@ public class OpenFileDialog {
     private String path;
     private String[] items;
 
-    public android.app.AlertDialog.Builder createOpenFileDialog(android.content.Context context,final OpenFileDialog.OpenMode mode)
+    public android.app.AlertDialog.Builder createOpenFileDialog(final android.content.Context context,final OpenFileDialog.OpenMode mode)
             throws java.io.IOException {
         final java.util.ArrayList<Integer> checkedItems = new java.util.ArrayList<>();
         final android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(context);
@@ -69,7 +73,7 @@ public class OpenFileDialog {
                     @Override
                     public void onClick(android.content.DialogInterface dialog, int which, boolean isChecked) {
                         if (isChecked) checkedItems.add(which);
-                        else checkedItems.remove(which);
+                        else checkedItems.remove((Integer)which);
                     }
                 })
                 .setPositiveButton(context.getString(R.string.open), new DialogInterface.OnClickListener() {
@@ -98,7 +102,48 @@ public class OpenFileDialog {
                         }
                     }
                 })
-                .setNegativeButton(context.getString(R.string.cancel), null);
+                .setNegativeButton(context.getString(R.string.cancel), null).setNeutralButton(context.getString(R.string.move), new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(android.content.DialogInterface dialog, int which) {
+                        if (checkedItems.size()==1) {
+                            for (Integer i: checkedItems
+                                 ) {
+                                if (items[i].endsWith("../")) {
+                                    String nextPath = "/";
+                                    char[] pArray = path.toCharArray();
+                                    int slash = 0;
+                                    for (int j=0;j<pArray.length-1;j++) {
+                                        if (pArray[pArray.length-1-j] == '/') {
+                                            slash++;
+                                        }
+                                        if (slash==3) {
+                                            nextPath = path.substring(0,pArray.length-j);
+                                            break;
+                                        }
+                                    }
+                                    OpenFileDialog childopenfiledialog = new OpenFileDialog(nextPath);
+                                    childopenfiledialog.openFileAction = openFileAction;
+                                    try {
+                                        childopenfiledialog.createOpenFileDialog(context, mode).show();
+                                    } catch (java.io.IOException e) {
+                                        e.printStackTrace();
+                                    }
+                                } else {
+                                    if (items[i].endsWith("/")) {
+                                        OpenFileDialog childopenfiledialog = new OpenFileDialog(path + "/" + items[i]);
+                                        childopenfiledialog.openFileAction = openFileAction;
+                                        try {
+                                            childopenfiledialog.createOpenFileDialog(context, mode).show();
+                                        } catch (java.io.IOException e) {
+                                            e.printStackTrace();
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+        });
         return builder;
     }
 }

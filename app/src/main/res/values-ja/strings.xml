@@ -13,6 +13,6 @@
     <string name="name">名前</string>
     <string name="open">開く</string>
     <string name="cancel">キャンセル</string>
+    <string name="move">移動</string>
     <string name="no_such_file_or_directory">そのようなファイルやディレクトリはありません。</string>
-
 </resources>

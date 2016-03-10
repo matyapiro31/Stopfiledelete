@@ -33,4 +33,3 @@
         android:src="@android:drawable/ic_search_category_default" />
 
 </android.support.design.widget.CoordinatorLayout>
-<!--TODO:Determine how this app should be.-->

@@ -13,5 +13,6 @@
     <string name="name">Nimi</string>
     <string name="open">Avaa</string>
     <string name="cancel">Peru</string>
+    <string name="move">Siirrä</string>
     <string name="no_such_file_or_directory">Tiedostoa tai hakemistoa ei ole.</string>
 </resources>

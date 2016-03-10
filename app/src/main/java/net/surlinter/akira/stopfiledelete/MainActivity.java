@@ -1,8 +1,10 @@
 package net.surlinter.akira.stopfiledelete;
 
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -48,7 +50,10 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        final android.content.Context context = this;
         final TextView TV1= (TextView)findViewById(R.id.tv1);
+        TV1.setText("");
+        TV1.setMovementMethod(ScrollingMovementMethod.getInstance());
         //mode = help; //mode of show help message.
 
         mode = usual;
@@ -63,11 +68,10 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     java.util.Date date= new java.util.Date();
                     exec_log += "Search fab was clicked. (" + date.toString() +")\n\n";
-                    Process pr_ls = execShell(new String[] {"su","-c","lsattr /data/"});
-                    String output = getProcessStdOut(pr_ls);
                     mode = usual;
-                    TV1.scrollTo(0,0);
-                    TV1.setText(output);
+                    TV1.scrollTo(0, 0);
+                    TV1.setText("");
+                    SetFlag(context);
                 }
             }
         });
@@ -181,99 +185,6 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
-    public Process execShell(String[] cmdarray) {
-        Runtime runtime = Runtime.getRuntime();
-        Process process = null;
-        String output;
-        try {
-            process = runtime.exec(cmdarray);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        java.util.Date date= new java.util.Date();
-        exec_log += "shell command `" + cmdarray[0] + "` was executed. (" + date.toString() + ")\n";
-        exec_log += "arguments are";
-        exec_log += " \'";
-        for (String arg:cmdarray
-             ) {
-            exec_log += arg.equals(cmdarray[0])?"":" " + arg;
-        } exec_log += "\'\n";
-        exec_log += "process is " + process.toString() +"\n\n";
-
-        return process;
-    }
-
-    public String getProcessStdOut(java.lang.Process pr) {
-        String str_stdout="";
-        try {
-            String line;
-            BufferedReader read_stdout = new BufferedReader(new InputStreamReader(pr.getInputStream()));
-
-            while ((line=read_stdout.readLine())!=null) {
-                str_stdout +=line + "\n";
-            }
-            read_stdout.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return str_stdout;
-    }
-
-    public String getProcessStdErr(java.lang.Process pr) {
-        String str_stderr="";
-        try {
-            String line;
-            BufferedReader read_stderr = new BufferedReader(new InputStreamReader(pr.getErrorStream()));
-
-            while ((line=read_stderr.readLine())!=null) {
-                str_stderr +=line + "\n";
-            }
-            read_stderr.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return str_stderr;
-    }
-
-    public boolean setProcessStdIn(java.lang.Process pr,String[] text) {
-        try {
-            DataOutputStream d_out = new DataOutputStream(pr.getOutputStream());
-            for (String word:text
-                 ) {
-                d_out.writeBytes(word+"\n");
-            }
-
-        } catch (IOException e) {
-            e.printStackTrace();
-            return false;
-        }
-        java.util.Date date= new java.util.Date();
-        exec_log += "Standard input for " + pr.toString() + " received text. (" + date.toString() + ")\n";
-        for (String word:text
-             ) {
-            exec_log += word + "\n";
-        }
-
-        return true;
-    }
-
-    public int exitProcess(java.lang.Process pr) {
-        int ret;
-        try {
-            pr.waitFor();
-            ret = pr.exitValue();
-            if (ret == -1) {
-                ret = 0x10;
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            pr.destroy();
-            ret = -1;
-        }
-        exec_log += "process " + pr.toString() + "is exited. (" + new java.util.Date().toString() + ")\n\n";
-        return ret;
-    }
-
     @Override
     public void onStart() {
         super.onStart();
@@ -298,15 +209,6 @@ public class MainActivity extends AppCompatActivity {
     public void onResume() {
         super.onResume();
 
-        //Test
-        String test = "/data/test";
-        execShell(new String[]{"su", "-c", "touch /data/test"});
-        java.lang.Process pr = execShell(new String[] {"su"});
-        setProcessStdIn(pr,new String[] {"chattr +i /data/test","exit"});
-        exitProcess(pr);
-        final TextView TV1= (TextView)findViewById(R.id.tv1);
-        TV1.setMovementMethod(ScrollingMovementMethod.getInstance());
-        TV1.setText(test);
     }
 
     @Override
@@ -329,18 +231,20 @@ public class MainActivity extends AppCompatActivity {
         client.disconnect();
     }
 
-    public void Test(android.content.Context context) {
-        OpenFileDialog openFileDialog = new OpenFileDialog("/data");
+    public void SetFlag(android.content.Context context) {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        String default_root = preferences.getString("default_path","/");
+        OpenFileDialog openFileDialog = new OpenFileDialog(default_root);
         openFileDialog.openFileAction = new OpenFileDialog.OpenFileAction() {
             @Override
             public File write(File file) {
-                execShell(new String[] {"su", "-c", "chattr +i " + file.getAbsolutePath()});
+                Shell.execShell(new String[] {"su", "-c", "chattr +i " + file.getAbsolutePath()});
                 return file;
             }
 
             @Override
             public File append(File file) {
-                execShell(new String[] {"su", "-c", "chattr -i " + file.getAbsolutePath()});
+                Shell.execShell(new String[] {"su", "-c", "chattr -i " + file.getAbsolutePath()});
                 return file;
             }
 
@@ -350,61 +254,12 @@ public class MainActivity extends AppCompatActivity {
             }
         };
         try {
-            openFileDialog.createOpenFileDialog(context, OpenFileDialog.OpenMode.Write);
+            openFileDialog.createOpenFileDialog(context, OpenFileDialog.OpenMode.Write).show();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
-    /*
-
-    public interface OpenFileAction {
-        java.io.File write(java.io.File file);
-        java.io.File append(java.io.File file);
-        void read(java.io.File file);
-        String toString();
-    }
-
-    public enum OpenMode {
-        Write,Append,Read
-    }
-
-    public android.app.AlertDialog.Builder createOpenFileDialog(android.content.Context context,final String[] items, final String path, final OpenFileAction openFileAction, final OpenMode mode)
-            throws java.io.IOException {
-        final java.util.ArrayList<Integer> checkedItems = new java.util.ArrayList<>();
-        final android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(context);
-        builder.setTitle(getString(R.string.open))
-                .setMultiChoiceItems(items, null, new android.content.DialogInterface.OnMultiChoiceClickListener() {
-                    @Override
-                    public void onClick(android.content.DialogInterface dialog, int which, boolean isChecked) {
-                        if (isChecked) checkedItems.add(which);
-                        else checkedItems.remove(which);
-                    }
-                })
-                .setPositiveButton(getString(R.string.open), new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(android.content.DialogInterface dialog, int which) {
-
-                        for (Integer i : checkedItems) {
-                            // item_i checked
-                            // note: i is undefined when not checked. use switch to do work.
-
-                            // insert / as double / is allowed and no / is error.
-                            java.io.File file = new java.io.File(path + "/" + items[i]);
-                            switch (mode) {
-                                case Write:
-                                    file = openFileAction.write(file);
-                                    break;
-                                case Append:
-                                    file = openFileAction.append(file);
-                                case Read:
-                                    openFileAction.read(file);
-                                default:
-                                    android.util.Log.d("FileState", openFileAction.toString());
-                            }
-                        }
-                    }
-                })
-                .setNegativeButton(getString(R.string.cancel), null);
-        return builder;
-    }*/
 }
+//TODO:add double click action to move.
+//TODO:implement SuperUserOpenFileDialog.
+//TODO:add ListView over the TextView and show file info.
