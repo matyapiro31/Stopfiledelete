@@ -12,7 +12,10 @@
     <string name="saved">保存しました</string>
     <string name="name">名前</string>
     <string name="open">開く</string>
+    <string name="open_title">%sを開く</string>
     <string name="cancel">キャンセル</string>
     <string name="move">移動</string>
     <string name="no_such_file_or_directory">そのようなファイルやディレクトリはありません。</string>
+    <string name="Introduction">タップして削除をストップしたいファイルを検索しよう!</string>
+    <string name="file_to_lock">保護したいファイル</string>
 </resources>

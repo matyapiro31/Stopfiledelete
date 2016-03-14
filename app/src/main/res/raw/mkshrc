@@ -1,0 +1,21 @@
+function fullname() {
+        if [ ! -e $1 ];then
+            echo No such file or directory. >&2
+            return 1
+        else
+            if [ -f $1 ];then
+                echo $(cd $(dirname $1)&&pwd)/$(basename $1)| \
+                sed -e 's/\/\{2,\}/\//g'
+            elif [ -d $1 ];then
+                echo $(cd $1 &&pwd)| \
+                sed -e 's/\/\{2,\}/\//g'
+            fi
+            return 0
+        fi
+}
+function list_files() {
+    if [ $(fullname $1) != "/" ];then
+        echo ../
+    fi
+    busybox ls -1ap $1|tail -n +3
+}

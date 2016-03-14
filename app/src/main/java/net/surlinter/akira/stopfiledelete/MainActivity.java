@@ -13,6 +13,7 @@ import android.text.method.ScrollingMovementMethod;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.textservice.TextInfo;
 import android.widget.Button;
 import android.widget.TextView;
 
@@ -25,9 +26,12 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.Runtime;
 import java.lang.Process;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -41,7 +45,6 @@ public class MainActivity extends AppCompatActivity {
     protected static final int usual = 1;
     protected static final int help = 2;
     protected static final int log = 3;
-    public String exec_log="";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,9 +53,25 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        InputStream is = this.getResources().openRawResource(R.raw.mkshrc);
+        byte[] binary = new byte[2048];
+        try {
+            is.read(binary);
+            openFileOutput(".mkshrc", MODE_PRIVATE).write(binary);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        //Timer for auto-logging.
+        Timer timer = new Timer(true);
+        AutoLogTimerTask task = new AutoLogTimerTask();
+        task.context = this;
+        timer.schedule(task, 1000,1000);
+
+
         final android.content.Context context = this;
         final TextView TV1= (TextView)findViewById(R.id.tv1);
-        TV1.setText("");
+        TV1.setText(R.string.Introduction);
         TV1.setMovementMethod(ScrollingMovementMethod.getInstance());
         //mode = help; //mode of show help message.
 
@@ -67,10 +86,10 @@ public class MainActivity extends AppCompatActivity {
                             .setAction("Action", null).show();
                 } else {
                     java.util.Date date= new java.util.Date();
-                    exec_log += "Search fab was clicked. (" + date.toString() +")\n\n";
+                    Shell.exec_log += "Search fab was clicked. (" + date.toString() +")\n\n";
                     mode = usual;
                     TV1.scrollTo(0, 0);
-                    TV1.setText("");
+                    TV1.setText(R.string.Introduction);
                     SetFlag(context);
                 }
             }
@@ -88,7 +107,9 @@ public class MainActivity extends AppCompatActivity {
                         TV1.scrollTo(0,0);
                     }
                     mode = log;
-                    TV1.setText(exec_log);
+                    Process prlog = Shell.execShell(new String[] {"cat","/data/data/net.surlinter.akira.stopfiledelete/files/exec_log"});
+                    String all_exec_log = Shell.getProcessStdOut(prlog);
+                    TV1.setText(all_exec_log);
                 }
             }
         });
@@ -128,10 +149,12 @@ public class MainActivity extends AppCompatActivity {
             if (mode == usual || mode == log) {
                 try {
                     FileOutputStream f_os = openFileOutput("exec_log", MODE_APPEND|MODE_PRIVATE);
-                    f_os.write(exec_log.getBytes());
+                    f_os.write(Shell.exec_log.getBytes());
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
+                Shell.exec_log = "";
+
                 Snackbar.make(getWindow().getDecorView(),getString(R.string.saved), Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
             } else if (mode == help) {
@@ -145,44 +168,6 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
         return super.onOptionsItemSelected(item);
-    }
-
-    public boolean addAttr(String file) {
-        Runtime runtime = Runtime.getRuntime();
-        Process process;
-        String[] command = {
-                "su","-c","chattr +i "+file
-        };
-
-        try {
-            process = runtime.exec(command);
-            process.waitFor();
-        } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
-        }
-        java.util.Date date= new java.util.Date();
-        exec_log += "i flag was added to " + file + ". (" + date.toString() + ")\n\n";
-
-        return true;
-    }
-
-    public boolean removeAttr(String file) {
-        Runtime runtime = Runtime.getRuntime();
-        Process process;
-        String[] command = {
-                "su","-c","chattr","-i",file
-        };
-
-        try {
-            process = runtime.exec(command);
-            process.waitFor();
-        } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
-        }
-        java.util.Date date= new java.util.Date();
-        exec_log += "i flag was removed to " + file +". (" + date.toString() + ")\n\n";
-
-        return true;
     }
 
     @Override
@@ -208,7 +193,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onResume() {
         super.onResume();
-
     }
 
     @Override
@@ -231,20 +215,63 @@ public class MainActivity extends AppCompatActivity {
         client.disconnect();
     }
 
+    public boolean addAttr(String file) {
+        Runtime runtime = Runtime.getRuntime();
+        Process process;
+        String[] command = {
+                "su","-c","chattr +i "+file
+        };
+
+        try {
+            process = runtime.exec(command);
+            process.waitFor();
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+        }
+        java.util.Date date= new java.util.Date();
+        Shell.exec_log += "i flag was added to " + file + ". (" + date.toString() + ")\n\n";
+
+        return true;
+    }
+
+    public boolean removeAttr(String file) {
+        Runtime runtime = Runtime.getRuntime();
+        Process process;
+        String[] command = {
+                "su","-c","chattr","-i",file
+        };
+
+        try {
+            process = runtime.exec(command);
+            process.waitFor();
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+        }
+        java.util.Date date= new java.util.Date();
+        Shell.exec_log += "i flag was removed to " + file +". (" + date.toString() + ")\n\n";
+
+        return true;
+    }
+
     public void SetFlag(android.content.Context context) {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-        String default_root = preferences.getString("default_path","/");
+        String default_root = preferences.getString("default_path", "/");
         OpenFileDialog openFileDialog = new OpenFileDialog(default_root);
+
+        openFileDialog.MenuWords =
+                new Translate(new String[] {context.getString(R.string.open), String.format(context.getString(R.string.open_title), context.getString(R.string.file_to_lock)),
+                        context.getString(R.string.move), context.getString(R.string.cancel)},
+                new String[] {"open", "open_title", "move", "cancel"});
         openFileDialog.openFileAction = new OpenFileDialog.OpenFileAction() {
             @Override
             public File write(File file) {
-                Shell.execShell(new String[] {"su", "-c", "chattr +i " + file.getAbsolutePath()});
+                Shell.execShell(new String[]{"su", "-c", "chattr +i " + file.getAbsolutePath()});
                 return file;
             }
 
             @Override
             public File append(File file) {
-                Shell.execShell(new String[] {"su", "-c", "chattr -i " + file.getAbsolutePath()});
+                Shell.execShell(new String[]{"su", "-c", "chattr -i " + file.getAbsolutePath()});
                 return file;
             }
 
@@ -259,7 +286,24 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
     }
+
+    public class AutoLogTimerTask extends TimerTask {
+        protected android.content.Context context;
+        public void run() {
+            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+            if (preferences.getBoolean("is_log_auto",false)) {
+                try {
+                    FileOutputStream f_os = openFileOutput("exec_log", MODE_APPEND | MODE_PRIVATE);
+                    f_os.write(Shell.exec_log.getBytes());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                Shell.exec_log = "";
+            }
+        }
+    }
 }
-//TODO:add double click action to move.
-//TODO:implement SuperUserOpenFileDialog.
 //TODO:add ListView over the TextView and show file info.
+//TODO:implement auto back button.
+//TODO:DETECT /data/data/<project_dir>
+//TODO:add Async Shell class.

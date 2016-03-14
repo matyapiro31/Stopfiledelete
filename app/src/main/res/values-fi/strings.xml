@@ -12,7 +12,10 @@
     <string name="saved">Tallennettu</string>
     <string name="name">Nimi</string>
     <string name="open">Avaa</string>
+    <string name="open_title">Avaa %s</string>
     <string name="cancel">Peru</string>
     <string name="move">Siirrä</string>
     <string name="no_such_file_or_directory">Tiedostoa tai hakemistoa ei ole.</string>
+    <string name="Introduction">Tap search icon to find a file to stop delete.</string>
+    <string name="file_to_lock">file to lock</string>
 </resources>

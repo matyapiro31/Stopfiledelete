@@ -5,10 +5,8 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-/**
- * Created by akira on 16/03/11.
- */
 public class Shell {
+    public static String exec_log="";
     public static Process execShell(String[] cmdarray) {
         Runtime runtime = Runtime.getRuntime();
         Process process = null;
@@ -18,6 +16,16 @@ public class Shell {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        java.util.Date date= new java.util.Date();
+        exec_log += "shell command `" + cmdarray[0] + "` was executed. (" + date.toString() + ")\n";
+        exec_log += "arguments are";
+        exec_log += " \'";
+        for (String arg:cmdarray
+                ) {
+            exec_log += arg.equals(cmdarray[0])?"":" " + arg;
+        } exec_log += "\'\n";
+        exec_log += "process is " + process.toString() +"\n\n";
+
         return process;
     }
 
@@ -65,6 +73,13 @@ public class Shell {
             e.printStackTrace();
             return false;
         }
+        java.util.Date date= new java.util.Date();
+        exec_log += "Standard input for " + pr.toString() + " received text. (" + date.toString() + ")\n";
+        for (String word:text
+                ) {
+            exec_log += word + "\n";
+        }
+
         return true;
     }
 
@@ -81,6 +96,7 @@ public class Shell {
             pr.destroy();
             ret = -1;
         }
+        exec_log += "process " + pr.toString() + " is exited. (" + new java.util.Date().toString() + ")\n\n";
         return ret;
     }
 }

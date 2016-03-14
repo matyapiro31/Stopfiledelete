@@ -12,7 +12,10 @@
     <string name="name">Name</string>
     <string name="saved">Saved</string>
     <string name="open">Open</string>
+    <string name="open_title">Open %s</string>
     <string name="cancel">Cancel</string>
     <string name="move">Move</string>
     <string name="no_such_file_or_directory">No such file or directory.</string>
+    <string name="Introduction">Tap search icon to find a file to stop delete.</string>
+    <string name="file_to_lock">file to lock</string>
 </resources>
