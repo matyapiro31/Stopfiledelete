@@ -1,6 +1,5 @@
 package net.surlinter.akira.stopfiledelete;
 
-import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
@@ -13,7 +12,6 @@ import android.text.method.ScrollingMovementMethod;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.textservice.TextInfo;
 import android.widget.Button;
 import android.widget.TextView;
 
@@ -21,13 +19,10 @@ import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.common.api.GoogleApiClient;
 
-import java.io.BufferedReader;
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.lang.Runtime;
 import java.lang.Process;
 import java.util.Timer;
@@ -107,8 +102,9 @@ public class MainActivity extends AppCompatActivity {
                         TV1.scrollTo(0,0);
                     }
                     mode = log;
-                    Process prlog = Shell.execShell(new String[] {"cat","/data/data/net.surlinter.akira.stopfiledelete/files/exec_log"});
-                    String all_exec_log = Shell.getProcessStdOut(prlog);
+                    Process prlog = AsyncShell.execShell(new String[] {"cat","/data/data/net.surlinter.akira.stopfiledelete/files/exec_log"});
+                    String all_exec_log = AsyncShell.getProcessStdOut(prlog);
+                    all_exec_log += "\n" + AsyncShell.exec_log;
                     TV1.setText(all_exec_log);
                 }
             }
@@ -149,11 +145,12 @@ public class MainActivity extends AppCompatActivity {
             if (mode == usual || mode == log) {
                 try {
                     FileOutputStream f_os = openFileOutput("exec_log", MODE_APPEND|MODE_PRIVATE);
-                    f_os.write(Shell.exec_log.getBytes());
+                    f_os.write(AsyncShell.exec_log.getBytes());
+                    f_os.close();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-                Shell.exec_log = "";
+                AsyncShell.exec_log = "";
 
                 Snackbar.make(getWindow().getDecorView(),getString(R.string.saved), Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
@@ -229,7 +226,7 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
         java.util.Date date= new java.util.Date();
-        Shell.exec_log += "i flag was added to " + file + ". (" + date.toString() + ")\n\n";
+        AsyncShell.exec_log += "i flag was added to " + file + ". (" + date.toString() + ")\n\n";
 
         return true;
     }
@@ -248,7 +245,7 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
         java.util.Date date= new java.util.Date();
-        Shell.exec_log += "i flag was removed to " + file +". (" + date.toString() + ")\n\n";
+        AsyncShell.exec_log += "i flag was removed to " + file +". (" + date.toString() + ")\n\n";
 
         return true;
     }
@@ -256,7 +253,7 @@ public class MainActivity extends AppCompatActivity {
     public void SetFlag(android.content.Context context) {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
         String default_root = preferences.getString("default_path", "/");
-        OpenFileDialog openFileDialog = new OpenFileDialog(default_root);
+        SuperUserOpenFileDialog openFileDialog = new SuperUserOpenFileDialog(default_root);
 
         openFileDialog.MenuWords =
                 new Translate(new String[] {context.getString(R.string.open), String.format(context.getString(R.string.open_title), context.getString(R.string.file_to_lock)),
@@ -265,13 +262,13 @@ public class MainActivity extends AppCompatActivity {
         openFileDialog.openFileAction = new OpenFileDialog.OpenFileAction() {
             @Override
             public File write(File file) {
-                Shell.execShell(new String[]{"su", "-c", "chattr +i " + file.getAbsolutePath()});
+                AsyncShell.execShell(new String[]{"su", "-c", "chattr +i " + file.getAbsolutePath()});
                 return file;
             }
 
             @Override
             public File append(File file) {
-                Shell.execShell(new String[]{"su", "-c", "chattr -i " + file.getAbsolutePath()});
+                AsyncShell.execShell(new String[]{"su", "-c", "chattr -i " + file.getAbsolutePath()});
                 return file;
             }
 
@@ -294,7 +291,8 @@ public class MainActivity extends AppCompatActivity {
             if (preferences.getBoolean("is_log_auto",false)) {
                 try {
                     FileOutputStream f_os = openFileOutput("exec_log", MODE_APPEND | MODE_PRIVATE);
-                    f_os.write(Shell.exec_log.getBytes());
+                    f_os.write(AsyncShell.exec_log.getBytes());
+                    f_os.close();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }

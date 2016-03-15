@@ -14,8 +14,8 @@ public class SuperUserOpenFileDialog extends OpenFileDialog {
             return;
         }
         library_path = "/data/data/net.surlinter.akira.stopfiledelete/files";
-        java.lang.Process pr =Shell.execShell(new String[] {"su", "-c", "cd " + library_path + "&&" + "source .mkshrc &&" + "list_files " + dirname});
-        String output = Shell.getProcessStdOut(pr);
+        java.lang.Process pr =AsyncShell.execShell(new String[] {"su", "-c", "cd " + library_path + "&&" + "source .mkshrc &&" + "list_files " + dirname});
+        String output = AsyncShell.getProcessStdOut(pr);
         items = output.split("\n");
     }
     public String library_path;//Path for shell functions.
